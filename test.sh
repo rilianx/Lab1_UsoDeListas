@@ -58,12 +58,50 @@ if ./a.out &> /dev/null ; then
   
   ./a.out >&3
 
-  echo "Quiere actualizar su avance en el servidor? (s|n): " >&3
+  echo "Quieres actualizar tu avance en el servidor? (s|n): " >&3
   read response
 
   if [ "$response" == "s" ]; then
+
+    # Obtener URL de origin
+    REMOTE_URL=$(git remote get-url origin)
+
+    if [ -z "$REMOTE_URL" ]; then
+      echo "No se encontró el remote 'origin'."
+      exit 1
+    fi
+
+    # Extraer usuario desde la URL (ej: rilianx)
+    USERNAME=$(echo "$REMOTE_URL" | sed -E 's#https://github.com/([^/]+)/.*#\1#')
+
+    if [ -z "$USERNAME" ]; then
+      echo "No se pudo extraer el usuario desde la URL."
+      exit 1
+    fi
+
+    echo "Usuario detectado: $USERNAME"
+
+    echo "--------------------------------------------"
+    echo "Autenticación requerida (GitHub PAT)"
+    echo ""
+    echo "¿No tienes token?"
+    echo "Genera uno siguiendo esta guía:"
+    echo "https://chartreuse-goal-d5c.notion.site/Como-genero-un-token-de-acceso-github-30bd965dc59e805b97c5dfa3aa6276d1"
+    echo "--------------------------------------------"
+    echo ""
+    read -s -p "Token: " TOKEN
+    echo ""
+
+    if [ -z "$TOKEN" ]; then
+      echo "Token vacío. Abortando."
+      exit 1
+    fi
+
+    # Construir URL temporal con token
+    TEMP_URL=$(echo "$REMOTE_URL" | sed "s#https://#https://$USERNAME:$TOKEN@#")
+    
     git pull >&3
-    git push >&3
+    git push "$TEMP_URL" >&3
   fi
   
 
